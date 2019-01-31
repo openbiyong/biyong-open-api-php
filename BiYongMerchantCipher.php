@@ -17,7 +17,7 @@ class BiYongMerchantCipher {
   var $shaHashMode;
   var $aesMode;
   var $aesMethod;
-  var $aesNoPadding;
+  var $aesOptions;
   var $httpHeaders;
 
   function __construct($appId, $privateKey, $publicKey, $shaHashMode='SHA256', $aesMode=null) {
@@ -57,7 +57,7 @@ class BiYongMerchantCipher {
       }
       list($aesMethod, $padding) = explode('/', $aesMode);
   	  $this->aesMethod = "AES-128-" . $aesMethod;
-  	  $this->aesNoPadding = $padding == "NoPadding";
+  	  $this->aesOptions = ($padding == "NoPadding") ? (OPENSSL_RAW_DATA | OPENSSL_ZERO_PADDING) : OPENSSL_RAW_DATA;
       array_push($this->httpHeaders, "AesEncryptMode: " . $aesMode);
     }
   }
@@ -152,11 +152,7 @@ class BiYongMerchantCipher {
 
 
   function _aesEncrypt($data, $key, $iv) {
-    $options = OPENSSL_RAW_DATA;
-    if ($this->aesNoPadding) {
-      $options = $options | OPENSSL_ZERO_PADDING;
-    }
-    $encryptedData = openssl_encrypt($data, $this->aesMethod, $key, $options, $iv);
+    $encryptedData = openssl_encrypt($data, $this->aesMethod, $key, $this->aesOptions, $iv);
     if ($encryptedData) {
       return $encryptedData;
     } else {
@@ -165,11 +161,7 @@ class BiYongMerchantCipher {
   }
 
   function _aesDecrypt($data, $key, $iv) {
-    $options = OPENSSL_RAW_DATA;
-    if ($this->aesNoPadding) {
-      $options = $options | OPENSSL_ZERO_PADDING;
-    }
-    $decryptedData = openssl_decrypt($data, $this->aesMethod, $key, $options, $iv);
+    $decryptedData = openssl_decrypt($data, $this->aesMethod, $key, $this->aesOptions, $iv);
     if ($decryptedData) {
       return $decryptedData;
       return $this->aesPkcs5pad ? $this->_pkcs5Unpad($decryptedData) : $decryptedData;
